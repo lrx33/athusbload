@@ -1,3 +1,7 @@
+/*
+  Load firmware for AR9271 over USB
+*/
+
 #include<libusb.h>
 #include<stdio.h>
 #include<assert.h>
@@ -78,49 +82,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
-    /* int libusb_control_transfer(libusb_device_handle *devh, uint8_t */
-    /* bmRequestType, uint8_t bRequest, uint16_t wValue, uint16_t wIndex, */
-    /* unsigned char *data, uint16_t wLength, unsigned int timeout) Perform a */
-
-    /* err = usb_control_msg(hif_dev->udev, usb_sndctrlpipe(hif_dev->udev, 0), */
-    /* 		      FIRMWARE_DOWNLOAD_COMP, */
-    /* 		      0x40 | USB_DIR_OUT, */
-    /* 		      firm_offset >> 8, 0, NULL, 0, USB_MSG_TIMEOUT); */
-
-
-
-/* Parameters */
-/*     dev_handle	a handle for the device to communicate with */
-/*     bmRequestType	the request type field for the setup packet */
-/*     bRequest	the request field for the setup packet */
-/*     wValue	the value field for the setup packet */
-/*     wIndex	the index field for the setup packet */
-/*     data	a suitably-sized data buffer for either input or output (depending on direction bits within bmRequestType) */
-/*     wLength	the length field for the setup packet. The data buffer should be at least this size. */
-/*     timeout	timeout (in millseconds) that this function should wait before giving up due to no response being received. For an unlimited timeout, use value 0. */
-
-
-/* 	int usb_control_msg(struct usb_device * dev, unsigned int pipe, __u8 request, __u8 requesttype, __u16 value, __u16 index, void * data, __u16 size, int timeout); */
-
-/*     err = usb_control_msg( */
-/* 	hif_dev->udev, */
-/* 	usb_sndctrlpipe(hif_dev->udev, 0), */
-/* req	FIRMWARE_DOWNLOAD, */
-/* reqt	0x40 | USB_DIR_OUT, */
-/* 	addr >> 8, */
-/* 	0, */
-/* 	buf, */
-/* 	transfer, */
-/* 	USB_MSG_TIMEOUT); */
-
-/* ARGUMENTS */
-/* dev pointer to the usb device to send the message to */
-/* pipeEndpoint “pipe” to send the message to */
-/* request USB message request value */
-/* requesttype USB message request type value */
-/* value USB message value */
-/* index USB message index value */
-/* data pointer to the data to send */
-/* size length in bytes of the data to send */
-/* timeout time in msecs to wait for the message to complete before timing out (if 0 the wait is forever) */
