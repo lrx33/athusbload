@@ -3,13 +3,14 @@
 #include<assert.h>
 #include<unistd.h>
 #include<fcntl.h>
+#include<sys/stat.h>
+#include<sys/mman.h>
 
 #define TIMEOUT 2000
 #define AR9271_FIRMWARE       0x501000U
 #define AR9271_FIRMWARE_TEXT  0x903000U
 #define FW_DOWNLOAD 0x30
 #define FW_DOWNLOAD_DONE 0x31
-#define FWLOC "/home/bob/open-ath9k-htc-firmware/target_firmware/htc_9271.fw"
 #define FWMAXLEN 80000
 
 int main(int argc, char *argv[]) {
@@ -19,31 +20,28 @@ int main(int argc, char *argv[]) {
 	return 1;
     }
 
-    uint16_t idVendor = 0x0cf3;
-    uint16_t idProduct = 0x9271;
     libusb_context *libctx = NULL;
-
     int libinit = libusb_init(&libctx);
     assert(libinit == 0);
 
-    /* Read firmware into buf from fw file */
-    uint8_t fwdata[FWMAXLEN];
-    uint32_t fwlen = 0;
 
+    /* mmap firmware file */
     int fwfd = open(argv[1], O_RDONLY);
     assert(fwfd != -1);
-    while(1) {
-	ssize_t rcnt = read(fwfd, fwdata + fwlen, FWMAXLEN - fwlen);
-	if(rcnt == 0)
-	    break;
 
-	fwlen += rcnt;
-    }
-    close(fwfd);
+    struct stat fwinfo;
+    assert(fstat(fwfd, &fwinfo) == 0);
 
+    uint32_t fwlen = fwinfo.st_size;
     printf("fwlen = %u\n", fwlen);
 
-    /* Open USB Device and write out firmware */
+    uint8_t *fwdata = mmap(NULL, fwlen, PROT_READ, MAP_PRIVATE, fwfd, 0);
+    assert(fwdata != MAP_FAILED);
+
+
+    /* Get USB handle */
+    uint16_t idVendor = 0x0cf3;
+    uint16_t idProduct = 0x9271;
     libusb_device_handle *usbdev = libusb_open_device_with_vid_pid(libctx, idVendor, idProduct);
     assert(usbdev != NULL);
 
@@ -51,6 +49,7 @@ int main(int argc, char *argv[]) {
     uint32_t fwrem = fwlen;
     uint32_t fwdone = 0;
 
+    /* Write out firmware in 4k chunks*/
     while(fwrem) {
 
 	uint32_t chunksz = fwrem > 4096 ? 4096 : fwrem;
@@ -58,16 +57,22 @@ int main(int argc, char *argv[]) {
 
 	printf("Transferred ret=%d bytes of firmware.\n", ret);
 
-	assert(ret > 0);
+	if(ret < 0) {
+	    printf("ERROR: %s", libusb_strerror(ret));
+	    return 2;
+	}
 
-	memaddr += chunksz;
-	fwrem -= chunksz;
-	fwdone += chunksz;
+	memaddr += ret;
+	fwrem -= ret;
+	fwdone += ret;
     }
 
+    /* Download done message to USB device */
     int ret = libusb_control_transfer(usbdev, 0x40, FW_DOWNLOAD_DONE, AR9271_FIRMWARE_TEXT >> 8, 0, NULL, 0, TIMEOUT);
     printf("Firmware loaded: ret=%d\n", ret);
 
+    munmap(fwdata, fwlen);
+    close(fwfd);
     libusb_close(usbdev);
     libusb_exit(libctx);
 
